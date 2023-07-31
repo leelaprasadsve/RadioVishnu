@@ -1,0 +1,502 @@
+<!DOCTYPE html>
+<html >
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<link rel="stylesheet" type="text/css" href="styles/styleVolume.css">
+<link rel="stylesheet" type="text/css" href="styles/loadingAnimation.css">
+<link rel="stylesheet" type="text/css" href="styles/equaliser.css">
+<title>RADIO VISHNU Flash Player</title>
+<style>
+a.style1:link {color:#FFF;text-decoration: none; font-family:Verdana, Geneva, sans-serif; font-size:12px;}
+a.style1:visited {color:#FFF;text-decoration: none; font-family:Verdana, Geneva, sans-serif; font-size:12px;}
+a.style1:active {color:#FFF;text-decoration: none; font-family:Verdana, Geneva, sans-serif; font-size:12px;}
+a.style1:hover {color:#CCC;text-decoration: none; font-family:Verdana, Geneva, sans-serif; font-size:12px;}
+</style>
+<script type="text/javascript" src="http://ajax.googleapis.com/ajax/libs/swfobject/2.2/swfobject.js"></script>
+<script type="text/javascript" src="js/jquery-1.7.2.min.js"></script>
+<script type="text/javascript" src="js/jquery-ui-1.8.21.custom.min.js"></script>
+<script language="javascript" >
+
+var streamOne = "";
+
+var isFlashSupported = 0;
+var volumeGlobal = 30;
+var previousState = 0;
+var isPlaying = 0;
+
+function showDiv(pass) 
+{ 
+	var divs = document.getElementsByTagName('div'); 
+	for(i=0;i<divs.length;i++)
+	{ 
+		if(divs[i].id.match(pass))
+		{//if they are 'see' divs 
+			if(document.getElementById) // DOM3 = IE5, NS6 
+			{
+				divs[i].style.visibility="visible";// show/hide 
+			}
+			else if (document.layers) // Netscape 4 
+			{
+				document.layers[divs[i]].display = 'visible'; 
+			}
+			else // IE 4 
+			{
+				document.all.divs[i].visibility = 'visible'; 
+			}
+		} 
+	} 
+}
+
+function hideDiv(pass) 
+{ 
+	var divs = document.getElementsByTagName('div'); 
+	for(i=0;i<divs.length;i++)
+	{ 
+		if(divs[i].id.match(pass))
+		{//if they are 'see' divs 
+			if(document.getElementById) // DOM3 = IE5, NS6 
+			{
+				divs[i].style.visibility='hidden';// show/hide 
+			}
+			else if (document.layers) // Netscape 4 
+			{
+				document.layers[divs[i]].display = 'hidden'; 
+			}
+			else // IE 4 
+			{
+				document.all.divs[i].visibility = 'hidden'; 
+			}
+		} 
+	} 
+}
+
+function testFlash()
+{
+	if((navigator.userAgent.match(/Android/i)) || (navigator.userAgent.match(/Dalvik/i)) || (navigator.userAgent.match(/GINGERBREAD/i)) || (navigator.userAgent.match(/Linux;.*Mobile Safari/i)) || (navigator.userAgent.match(/Linux 1\..*AppleWebKit/i)) ) 
+	{
+		isFlashSupported = 0;
+		document.getElementById("flash").style.display = 'none';
+		document.getElementById('animate').style.display = 'none';
+		streamOne = "http://streamasiahlscdn.atc-labs.com/radiovishnu.m3u8";
+		var audioPlayer = document.createElement('audio');
+		audioPlayer.src = "";
+		audioPlayer.setAttribute("controls","controls");
+		audioPlayer.id = "aud";
+		audioPlayer.style.visibility = "hidden";
+		audioPlayer.onprogress = updateProgress;
+		audioPlayer.onstalled = stalled;
+		audioPlayer.onsuspend = suspend;
+		audioPlayer.onerror = error;	
+		document.getElementById("radio").appendChild(audioPlayer);
+	}
+		
+	else if((navigator.userAgent.match(/iemobile/i))  || (navigator.userAgent.toLowerCase().indexOf("windows nt") != -1 &&
+		navigator.userAgent.toLowerCase().indexOf("touch") != -1 && navigator.userAgent.toLowerCase().indexOf("touch") != -1) || (navigator.userAgent.match(/iPhone/i)) || (navigator.userAgent.match(/iPad/i)) || (navigator.userAgent.match(/iPod/i)))
+	{
+		isFlashSupported = 0;
+		document.getElementById("flash").style.display = 'none';
+		document.getElementById('animate').style.display = 'none';
+		var audioPlayer = document.createElement('audio');
+		audioPlayer.src = "";
+		audioPlayer.setAttribute("controls","controls");
+		audioPlayer.id = "aud";
+		audioPlayer.style.visibility = "hidden";
+		audioPlayer.onprogress = updateProgress;
+		audioPlayer.onstalled = stalled;
+		audioPlayer.onsuspend = suspend;
+		audioPlayer.onerror = error;	
+		document.getElementById("radio").appendChild(audioPlayer);
+		streamOne = "http://streamasiacdn.atc-labs.com/radiovishnu.aac";
+	}
+			
+	else
+	{
+		var msie = window.navigator.userAgent.indexOf("MSIE ");
+		isFlashSupported = 1;
+		document.getElementById("radio").style.visibility = 'hidden';
+		document.getElementById('animate').style.display = 'none';
+		var flashvars = {};
+		var params = {wmode:"transparent"};
+		var attributes = {}
+		attributes.id = "flash";
+		swfobject.embedSWF("m3u8Player.swf", "flash", "290", "40", "10.2.0", true, flashvars, params, attributes);
+				
+		if(swfobject.hasFlashPlayerVersion("1"))
+		{
+			document.getElementById("flash").style.display = 'block';
+		}
+		
+		streamOne = "http://streamasiacdn.atc-labs.com/radiovishnu.aac";	
+	}
+		
+	document.getElementById("radio").style.visibility = 'hidden';
+	drawvolumecontroller(20,35,10);
+}
+
+function muteUnmute(btn)
+{
+	if(btn.value == 'mute')
+	{
+		btn.value = 'unmute';
+		btn.src = "Images/speakerMuteIcon.png";
+		
+		if(isFlashSupported == 1) //flash
+		{
+			document.getElementById('flash').setRadioVolume(0);
+		}
+	
+		else //html5
+		{
+			document.getElementById("aud").volume = 0;
+		}
+	}
+	
+	else
+	{
+		btn.value = 'mute';
+		btn.src = "Images/speakerIcon.png";
+		
+		if(isFlashSupported == 1) //flash
+		{
+			document.getElementById('flash').setRadioVolume(volumeGlobal);
+		}
+	
+		else //html5
+		{
+			document.getElementById("aud").volume = volumeGlobal/100;
+		}
+	}
+}
+
+function onBtnClick(btn)
+{
+	if(btn.value == 'stop')
+	{
+		stopStream();
+		isPlaying = 0;
+		document.getElementById("play").value = 'play';
+		document.getElementById("play").src = 'Images/play.png';
+	}
+	
+	else if(btn.value == 'play')
+	{
+		btn.value = 'pause';
+		btn.src = 'Images/pause.png';
+		play(1);
+		isPlaying = 1;
+	}
+	
+	else if(btn.value == 'pause')
+	{
+		btn.value = 'play';
+		btn.src = 'Images/play.png';
+		play(1);
+		isPlaying = 0;
+	}
+}
+
+var stream = "";
+
+function selectStream(num)
+{
+	if(num == '0' && stream == ""){	stream = streamOne;	}
+	
+	else if(num == '1'){ stream = streamOne; }
+}
+
+function play(num)
+{
+	try
+	{	
+		selectStream(num);
+	
+		if(isFlashSupported == 1) //flash
+		{
+			if(isPlaying == 0)
+			{
+				document.getElementById('flash').playRadio(num);
+				document.getElementById('flash').setRadioVolume(volumeGlobal);
+			}
+			
+			else
+			{
+				document.getElementById('flash').setRadioVolume(0);
+			}
+		}
+	
+		else //html5
+		{
+			document.getElementById('logo').innerHTML = "ATC Labs Player";
+			document.getElementById("aud").src = stream;
+			
+			if(isPlaying == 0)
+			{
+				document.getElementById("aud").play();		
+					setTimeout(function (){
+					document.getElementById('logo').innerHTML = "";
+					document.getElementById('animate').style.display = 'block';
+					}, 5000);
+				//document.getElementById('radioDisplay').style.display = 'block';
+			}
+			
+			else
+			{
+				document.getElementById("aud").pause();
+			}
+		}
+		
+		document.getElementById("muteUnmuteBtn").value = 'mute';
+		document.getElementById("muteUnmuteBtn").src = "Images/speakerIcon.png";
+	}
+	
+	catch(e)
+	{
+		//alert(e);
+	}
+}
+
+function stopStream()
+{
+	if(isFlashSupported == 1) //flash
+	{
+		document.getElementById('flash').stopRadio();
+		//document.getElementById('radioDisplay').style.display = 'none';
+	}
+	
+	else //html5
+	{
+		document.getElementById("aud").pause();
+		document.getElementById("animate").style.display = 'none';
+		document.getElementById('equaliser').style.display = 'none';
+		//document.getElementById('radioDisplay').style.display = 'none';
+	}
+}
+
+function drawvolumecontroller(length,height,nowselected)
+{	
+	document.getElementById("volumcontroller").innerHTML = "";
+	for (i=0;i<length;i++){
+		magassag = 7 + Math.round((1.4)*(length - i)); //where 40 is the container height
+		margintop = height-magassag;
+		if (margintop <= 0) {margintop=0;}
+		if (i >= nowselected)
+		{		//background-color valtozik ameddig epp ki van jelolve
+			document.getElementById("volumcontroller").innerHTML = document.getElementById("volumcontroller").innerHTML+'<div  	  			onmouseup="volumecontrolchanged('+i+')" style="left:600px; background-color:#ff9900;height:'+magassag+'px;margin-top:'+margintop+'px;" class="volumecontrollerbar"></div>';
+		} 
+		else
+		{
+			document.getElementById("volumcontroller").innerHTML = document.getElementById("volumcontroller").innerHTML+'<div  onmouseup="volumecontrolchanged('+i+')" style="left:600px; height:'+magassag+'px;margin-top:'+margintop+'px;" class="volumecontrollerbar"></div>';
+		}		
+	}	
+}
+
+function volumecontrolchanged(newvolume)
+{
+	try
+	{
+		drawvolumecontroller(20,35,newvolume);
+		var volume2 = ((20 - newvolume) * 10)/2;
+		var volume = document.getElementById("volume");
+		volume.value = ((20 - newvolume) * 10)/2;
+		volumeGlobal = 	volume2;
+	
+		if(isFlashSupported == 1)
+		{
+			document.getElementById("flash").setRadioVolume(volume2);
+		}
+	
+		else 
+		{
+			document.getElementById("aud").volume = volume2/100;
+		}
+	}
+
+	catch(e)
+	{
+		//alert(e);
+	}
+}
+
+//show html5 animation start
+function updateProgress()
+{
+	if(isPlaying && document.getElementById("logo").innerHTML == "")
+	{
+		//onprogress
+		var d = document.getElementById("animate");
+		audio = document.getElementById('aud');
+	
+		if(audio.networkState != 2)
+		{
+			d.style.display = 'none';
+			document.getElementById('equaliser').style = 'none';
+			return;
+		}
+		
+		var i = audio.currentTime;
+	
+		//var diff = i - previousState;
+	
+		if((Math.abs(i - previousState) < 0.000001))
+		{
+			if(audio.paused)
+			{
+				document.getElementById("animate").style.display = 'block';
+				document.getElementById('equaliser').style.display = 'none';
+			}
+		
+			else
+			{
+				document.getElementById("animate").style.display = 'none';
+				document.getElementById('equaliser').style.display = 'block';
+			}
+		}
+	
+		else
+		{
+			if(audio.paused)
+			{
+				document.getElementById("animate").style.display = 'block';
+				document.getElementById('equaliser').style.display = 'none';
+			}
+			else
+			{
+				document.getElementById("animate").style.display = 'none';
+				document.getElementById('equaliser').style.display = 'block';
+			}
+		}
+	
+		previousState = i;
+	}
+}
+
+function stalled()
+{
+	if(isPlaying)
+	{		
+		document.getElementById("animate").style.display = 'none';
+		document.getElementById('equaliser').style.display = 'block';
+		//document.getElementById("animate").innerHTML = "stalled";
+	}
+}
+
+function suspend()
+{
+	if(isPlaying)
+	{
+		document.getElementById("animate").style.display = 'block';
+		document.getElementById('equaliser').style.display = 'none';
+		//document.getElementById("animate").innerHTML = "suspended";
+	}
+}
+
+function error()
+{
+	//document.getElementById("animate").innerHTML = "RELOAD";
+	if(isPlaying)
+	{
+		document.getElementById('equaliser').style.display = 'none';
+		document.getElementById("animate").innerHTML = "error";
+	}
+}
+
+//html5 animation end
+</script>
+</head>
+
+<body bgcolor="" onLoad="testFlash();" style="width:440px; height:150px;">
+
+<table style="background-image:url(Images/radioBg.png); width:400px; height:300px; position:absolute; top:0px; left:0px; background-repeat:no-repeat;">
+<tr><td colspan="4" style="padding-top:20px; padding-right:30px;" align="right"><img src="Images/company.png"/></td></tr>
+<tr><td colspan="4" style=" padding:20px; padding-bottom:0px; height:10px;" ><marquee>
+<font face="Verdana, Geneva, sans-serif" size="3" color="#ffffff"><b>NOW PLAYING  RADIO VISHNU</b></font>
+</marquee></td></tr>
+<tr>
+<td colspan="4" style="" align="center">
+<div style="display:none;" id="flash">
+<a href="http://www.adobe.com/go/getflashplayer">
+	<img src="http://www.adobe.com/images/shared/download_buttons/get_flash_player.gif" alt="Get Adobe Flash player" />
+</a>
+</div>
+<div id="logo" class="logo"></div>
+<table>
+<tr><td>
+<div id = "animate" style="display:none;">
+<div id="block_1" class="barlittle"></div>
+<div id="block_2" class="barlittle"></div>
+<div id="block_3" class="barlittle"></div>
+<div id="block_4" class="barlittle"></div>
+<div id="block_5" class="barlittle"></div>
+<div id="block_6" class="barlittle"></div>
+<div id="block_7" class="barlittle"></div>
+<div id="block_8" class="barlittle"></div>
+<div id="block_9" class="barlittle"></div>
+<div id="block_10" class="barlittle"></div>
+<div id="block_11" class="barlittle"></div>
+<div id="block_12" class="barlittle"></div>
+<div id="block_13" class="barlittle"></div>
+<div id="block_14" class="barlittle"></div>
+<div id="block_15" class="barlittle"></div>
+<div id="block_16" class="barlittle"></div>
+<div id="block_17" class="barlittle"></div>
+<div id="block_18" class="barlittle"></div>
+<div id="block_19" class="barlittle"></div>
+</div>
+</td>
+</tr>
+</table>
+<div id="equaliser" style="display:none; padding:0px">
+<table>
+<tr>
+<td><div class="bar"></div></td>
+<td><div class="bar"></div></td>
+<td><div class="bar"></div></td>
+<td><div class="bar"></div></td>
+<td><div class="bar"></div></td>
+<td><div class="bar"></div></td>
+<td><div class="bar"></div></td>
+<td><div class="bar"></div></td>
+<td><div class="bar"></div></td>
+<td><div class="bar"></div></td>
+<td><div class="bar"></div></td>
+<td><div class="bar"></div></td>
+<td><div class="bar"></div></td>
+<td><div class="bar"></div></td>
+<td><div class="bar"></div></td>
+<td><div class="bar"></div></td>
+<td><div class="bar"></div></td>
+<td><div class="bar"></div></td>
+<td><div class="bar"></div></td>
+<td><div class="bar"></div></td>
+<td><div class="bar"></div></td>
+</tr>
+</table>
+</div>
+</td>
+</tr>
+<tr>
+<td style=" padding:10px; padding-left:20px;">
+<input type="image" src="Images/play.png" id="play" value="play" onClick="onBtnClick(this);"/>
+</td>
+<td style=" padding:10px;">
+<input type="image" src="Images/stop.png" id="stop" value="stop" onClick="onBtnClick(this);"/>
+</td>
+<td style="padding-bottom:10px;">
+<div id="volumeDisplay" style="width:50px; height:20px; z-index:27; visibility:hidden;" align="left">
+   <input type="text" id="volume" value="50" style="background:none; border:none; width:20px; height:20px; font-family:Arial, Helvetica, sans-serif; font-size:10px; color:#000; text-align:right;"/>
+   <input type="text" value="%" style="background:none; border:none; width:10px; height:20px; font-family:Arial, Helvetica, sans-serif; font-size:10px; color:#000; text-align:left; "/>
+</div>
+<div style="z-index:29;" onMouseOver="showDiv('volumeDisplay')" onMouseOut="hideDiv('volumeDisplay')">
+<div id="volumcontroller" style="z-index:1;">
+</div>
+</div>
+</td>
+<td style="padding:10px; padding-right:20px;"><input type="image" src="Images/speakerIcon.png" value="mute" id="speakerTB" onClick="muteUnmute(this)"/></td>
+</tr>
+</table>
+
+<div id="radio" style="position:absolute; display:none;" align="left">
+</div>
+
+</body>
+</html>

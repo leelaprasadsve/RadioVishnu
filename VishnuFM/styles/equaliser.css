@@ -1,0 +1,30 @@
+.bar {
+  background: #ff9900;
+  height: 10px;
+  width:5px;
+  transition-property: height;
+  transition-duration: 1s;
+  transition-timing-function: ease-in-out;
+  -moz-animation: move 1s infinite ease-in-out;
+  -webkit-animation: move 1s infinite ease-in-out;
+}
+
+@-moz-keyframes move {
+0% {
+        -moz-transform: scaley(1.2);
+    }
+
+    100% {
+        -moz-transform: scaley(0.2);
+    };
+}
+
+@-webkit-keyframes move {
+  0% {
+        -webkit-transform: scaley(1.2);
+    }
+
+    100% {
+        -webkit-transform: scaley(0.2);
+    };
+}
